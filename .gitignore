@@ -1,0 +1,9 @@
+bwm
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+dist/
+.DS_Store
