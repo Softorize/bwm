@@ -4,20 +4,22 @@ import (
 	"strconv"
 )
 
+// Sitemap is one Bing "Feed" as returned by GetFeeds / GetFeedDetails.
 type Sitemap struct {
-	URL             string   `json:"Url"`
-	IsPending       bool     `json:"IsPending"`
-	LastCrawledDate BingTime `json:"LastCrawledDate"`
-	LastSubmitted    BingTime `json:"LastSubmittedDate"`
-	URLCount        int64    `json:"UrlCount"`
-	Warnings        int64    `json:"Warnings"`
-	Errors          int64    `json:"Errors"`
+	URL         string   `json:"Url"`
+	Type        string   `json:"Type"`   // "Sitemap", "Sitemap Index", "RSS", ...
+	Status      string   `json:"Status"` // "Success", "Pending", ...
+	Compressed  bool     `json:"Compressed"`
+	FileSize    int64    `json:"FileSize"`
+	LastCrawled BingTime `json:"LastCrawled"`
+	Submitted   BingTime `json:"Submitted"`
+	URLCount    int64    `json:"UrlCount"`
 }
 
 type SitemapList []Sitemap
 
 func (s SitemapList) Headers() []string {
-	return []string{"URL", "Pending", "Last Crawled", "URLs", "Warnings", "Errors"}
+	return []string{"URL", "Type", "Status", "Last Crawled", "Submitted", "URLs"}
 }
 
 func (s SitemapList) Rows() [][]string {
@@ -25,40 +27,20 @@ func (s SitemapList) Rows() [][]string {
 	for i, sm := range s {
 		rows[i] = []string{
 			sm.URL,
-			strconv.FormatBool(sm.IsPending),
-			sm.LastCrawledDate.String(),
+			sm.Type,
+			sm.Status,
+			bingDate(sm.LastCrawled),
+			bingDate(sm.Submitted),
 			strconv.FormatInt(sm.URLCount, 10),
-			strconv.FormatInt(sm.Warnings, 10),
-			strconv.FormatInt(sm.Errors, 10),
 		}
 	}
 	return rows
 }
 
-type SitemapDetail struct {
-	URL             string   `json:"Url"`
-	IsPending       bool     `json:"IsPending"`
-	IsSitemapIndex  bool     `json:"IsSitemapIndex"`
-	LastCrawledDate BingTime `json:"LastCrawledDate"`
-	LastSubmitted    BingTime `json:"LastSubmittedDate"`
-	URLCount        int64    `json:"UrlCount"`
-	Warnings        int64    `json:"Warnings"`
-	Errors          int64    `json:"Errors"`
-	TotalURLs       int64    `json:"TotalUrls"`
-}
-
-func (d *SitemapDetail) Headers() []string {
-	return []string{"URL", "Pending", "Index", "Last Crawled", "Total URLs", "Warnings", "Errors"}
-}
-
-func (d *SitemapDetail) Rows() [][]string {
-	return [][]string{{
-		d.URL,
-		strconv.FormatBool(d.IsPending),
-		strconv.FormatBool(d.IsSitemapIndex),
-		d.LastCrawledDate.String(),
-		strconv.FormatInt(d.TotalURLs, 10),
-		strconv.FormatInt(d.Warnings, 10),
-		strconv.FormatInt(d.Errors, 10),
-	}}
+// Bing reports an unset date as /Date(-11644473600000)/ (year 1601).
+func bingDate(t BingTime) string {
+	if t.Year() < 1970 {
+		return "-"
+	}
+	return t.String()
 }
