@@ -28,7 +28,13 @@ func (bt *BingTime) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return fmt.Errorf("parsing BingTime %q: %w", string(b), err)
 	}
-	bt.Time = time.Unix(0, ms*int64(time.Millisecond)).UTC()
+	// Bing sends /Date(-11644473600000)/ (1601-01-01) for "never"; multiplying
+	// that by time.Millisecond overflowed int64 and rendered as the year 2185.
+	if ms < 0 {
+		bt.Time = time.Time{}
+		return nil
+	}
+	bt.Time = time.UnixMilli(ms).UTC()
 	return nil
 }
 
